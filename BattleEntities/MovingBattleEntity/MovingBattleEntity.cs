@@ -15,7 +15,14 @@ namespace ArenaGame {
         new MovingAttacker(stats, attackPipeline),
         new MovingDefender(stats, defensePipeline, hp),
         new MovingTurner(stats, turnPipeline, hp)
-    ) {}
+    ) {
+        public void equipItem(Item item) {
+            (_attacker as MovingAttacker).selectMove(item.getMove());
+        }
+        public void unequpItem(Item item) {
+            (_attacker as MovingAttacker).deselectMove(item.getMove());
+        }
+    }
 
     public class ComplexBattleStats(float attack, float defense, float armor, float piercing) : BattleStats {
         float _attack = attack;

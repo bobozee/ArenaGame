@@ -28,9 +28,9 @@ namespace ArenaGame {
     }
 
     public abstract class BattleEntity(string name, string description, LifeStatus life, Attacker attacker, Defender defender, Turner turner) : Entity(name, description, life), IBattleEntity {
-        private readonly Attacker _attacker = attacker;
-        private readonly Defender _defender = defender;
-        private readonly Turner _turner = turner;
+        protected readonly Attacker _attacker = attacker;
+        protected readonly Defender _defender = defender;
+        protected readonly Turner _turner = turner;
 
         public Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings) {
             return _attacker.createAttacks(targets, surroundings);

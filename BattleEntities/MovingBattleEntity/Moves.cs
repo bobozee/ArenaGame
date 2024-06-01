@@ -33,6 +33,17 @@ namespace ArenaGame {
             );
             return input;
         }
+
+        public static List<MovedAttack> ShootArrow(MoveContext cxt, List<MovedAttack> input) {
+            input.addOnto(
+                cxt.getPossibleTargets()[0],
+                [
+                    new MoveValue(MoveType.PIERCING, cxt.att()*0.5f),
+                    new MoveValue(MoveType.RANGED, cxt.att()*0.5f),
+                ]
+            );
+            return input;
+        }
     }
 
     public static class DefenceMoves {
