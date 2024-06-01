@@ -4,7 +4,7 @@ namespace ArenaGame{
         name,
         description,
         hp,
-        new SimpleAttacker(stats, new RandomTargeter()),
+        new SimpleAttacker(stats),
         new HPDefender(hp),
         new SimpleTurner()
     ) {}
@@ -23,20 +23,18 @@ namespace ArenaGame{
         }
     }
 
-    public record SimpleAttack(float attack, IAttackable[] targets) : Attack(targets) {
+    public record SimpleAttack(float attack, IAttackable target) : Attack(target) {
         float _attack = attack;
         public override float getAttack() { return _attack; }
     }
 
-    public class SimpleAttacker(SimpleBattleStats stats, Targeter targeter) : Attacker(targeter) {
+    public class SimpleAttacker(SimpleBattleStats stats) : Attacker() {
         SimpleBattleStats _stats = stats;
         public override Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings) {
             return [
                 new SimpleAttack(
                     _stats.getAttack(),
-                    [
-                        _targeter.target(targets, surroundings)
-                    ]
+                    targets[0]
                 )
             ];
         }
@@ -58,12 +56,6 @@ namespace ArenaGame{
 
     public class SimpleTurner : Turner {
         public override void turn() {}
-    }
-
-    public class RandomTargeter : Targeter {
-        public override IAttackable target(IAttackable[] potentialTargets, BattleEnvironment surroundings) {
-            return potentialTargets.RandomElement();
-        }
     }
     
     public abstract class BattleStats {

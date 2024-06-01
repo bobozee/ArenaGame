@@ -14,12 +14,11 @@ namespace ArenaGame {
         private readonly BattleEnvironment _surroundings = surroundings;
 
         public void resolveBattle() {
+            _defenders.Shuffle();
             foreach (IAttacker attacker in _attackers) {
                 Attack[] attacks = attacker.createAttacks(_defenders, _surroundings);
                 foreach (Attack attack in attacks) {
-                    foreach(IAttackable target in attack.getTargets()) {
-                       target.receiveAttack(attack); 
-                    }
+                    attack.getTarget().receiveAttack(attack); 
                 }
             }
         }

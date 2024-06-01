@@ -5,14 +5,14 @@ namespace ArenaGame {
         string description,
         HPLife hp,
         ComplexBattleStats stats,
-        Pipeline<float, MovedAttack> attackPipeline,
-        Pipeline<float, MovedAttack> defensePipeline,
+        Pipeline<MoveContext, List<MovedAttack>> attackPipeline,
+        Pipeline<MoveContext, MovedAttack> defensePipeline,
         Pipeline<(ComplexBattleStats, HPLife)> turnPipeline)
     : BattleEntity (
         name,
         description,
         hp,
-        new MovingAttacker(stats, new RandomTargeter(), attackPipeline),
+        new MovingAttacker(stats, attackPipeline),
         new MovingDefender(stats, defensePipeline, hp),
         new MovingTurner(stats, turnPipeline, hp)
     ) {}
@@ -48,25 +48,33 @@ namespace ArenaGame {
         }
     }
 
-    public class MovingAttacker(ComplexBattleStats stats, Targeter targeter, Pipeline<float, MovedAttack> pipeline) : Attacker(targeter) {
+    public struct MoveContext(IAttackable[] possibleTargets, BattleEnvironment surroundings, ComplexBattleStats battleStats) {
+        IAttackable[] _possibleTargets = possibleTargets;
+        BattleEnvironment _surroundings = surroundings;
+        ComplexBattleStats _battleStats = battleStats;
+
+        public IAttackable[] getPossibleTargets() { return _possibleTargets; }
+        public BattleEnvironment getBattleEnvironment() { return _surroundings; }
+        public ComplexBattleStats getBattleStats() { return _battleStats; }
+        public float att() { return _battleStats.getAttack(); }
+        public float def() {return _battleStats.getDefense(); }
+    }
+
+    public class MovingAttacker(ComplexBattleStats stats, Pipeline<MoveContext, List<MovedAttack>> pipeline) : Attacker() {
         
-        Pipeline<float, MovedAttack> _pipeline = pipeline;
+        Pipeline<MoveContext, List<MovedAttack>> _pipeline = pipeline;
         ComplexBattleStats _stats = stats;
 
-        public void selectMove(Func<float, MovedAttack, MovedAttack> move) {
+        public void selectMove(Func<MoveContext, List<MovedAttack>, List<MovedAttack>> move) {
             if (_pipeline.hasPipe(move)) { return; }
            _pipeline.addPipe(move);
         }
-        public void deselectMove(Func<float, MovedAttack, MovedAttack> move) {
+        public void deselectMove(Func<MoveContext, List<MovedAttack>, List<MovedAttack>> move) {
             _pipeline.removePipe(move);
         }
         
         public override Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings) {
-            List<Attack> acc = new List<Attack>();
-            foreach(IAttackable target in targets) {
-                acc.Add(_pipeline.execute(new(new(), _stats, [target]), _stats.getAttack()));
-            }
-            return acc.ToArray();
+            return _pipeline.execute(new List<MovedAttack>(), new (targets, surroundings, _stats)).ToArray();
         }
 
         public override string getStatsSummary() {
@@ -74,21 +82,21 @@ namespace ArenaGame {
         }
     }
 
-    public class MovingDefender(ComplexBattleStats stats, Pipeline<float, MovedAttack> pipeline, HPLife hp) : HPDefender(hp) {
+    public class MovingDefender(ComplexBattleStats stats, Pipeline<MoveContext, MovedAttack> pipeline, HPLife hp) : HPDefender(hp) {
         private HPLife _hp = hp;
-        private readonly Pipeline<float, MovedAttack> _pipeline = pipeline;
+        private readonly Pipeline<MoveContext, MovedAttack> _pipeline = pipeline;
         ComplexBattleStats _stats = stats;
 
-        public void selectMove(Func<float, MovedAttack, MovedAttack> move) {
+        public void selectMove(Func<MoveContext, MovedAttack, MovedAttack> move) {
             if (_pipeline.hasPipe(move)) { return;}
            _pipeline.addPipe(move);
         }
-        public void deselectMove(Func<float, MovedAttack, MovedAttack> move) {
+        public void deselectMove(Func<MoveContext, MovedAttack, MovedAttack> move) {
             _pipeline.removePipe(move);
         }
 
-        public void receiveAttack(MovedAttack attack) {
-            MovedAttack final = _pipeline.execute(attack, _stats.getAttack());
+        public void receiveAttack(MovedAttack attack, BattleEnvironment surroundings) {
+            MovedAttack final = _pipeline.execute(attack, new (null, surroundings, _stats));
             _hp.changeHp(final.getAttackStats().calculateDamageAgainst(_stats));
         }
     }
@@ -115,9 +123,11 @@ namespace ArenaGame {
 
 
 
-    public record MovedAttack(MoveValueCollection moveValues, ComplexBattleStats attackStats, IAttackable[] targets) : Attack(targets) {
+    public record MovedAttack(MoveValueCollection moveValues, ComplexBattleStats attackStats, IAttackable target) : Attack(target) {
 
-        public MovedAttack(MovedAttack copy, MoveValueCollection moveValues) : this(moveValues, copy.getAttackStats(), copy.getTargets()) {}
+        public MovedAttack(MovedAttack copy, MoveValue[] moveValues) : this(new(), copy.getAttackStats(), copy.getTarget()) {
+            _moveValues = new MoveValueCollection(copy.getMoveValues(), moveValues);
+        }
 
         MoveValueCollection _moveValues = moveValues;
         ComplexBattleStats _attackStats = attackStats;
@@ -155,7 +165,7 @@ namespace ArenaGame {
             _values = new float[Enum.GetNames(typeof(MoveType)).Length];
 
             foreach (MoveType type in Enum.GetValues(typeof(MoveType))) {
-                input[(int)type] = new(type, input[(int)type].getValue() + existing.getValue(type));
+                input[(int)type] = new(type, Math.Max(0, input[(int)type].getValue() + existing.getValue(type)));
             }
             foreach(MoveValue val in input) {
                 _values[(int)val.getType()] = val.getValue();
@@ -165,7 +175,7 @@ namespace ArenaGame {
         }
 
         public float getValue(MoveType type) { return _values[(int)type]; }
-        public float getSum() { return _values.Sum(); }
+        public float getSum() { return _values.Sum()*1.15f; }
         public bool hasValue(MoveType type) { return (valueExistance & (1 << (int)type)) > 0; }
     }
 

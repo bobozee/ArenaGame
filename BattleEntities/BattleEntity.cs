@@ -1,8 +1,10 @@
+using System.Diagnostics;
+
 namespace ArenaGame {
 
-    public abstract record Attack(IAttackable[] targets) {
-        private IAttackable[] _targets = targets;
-        public IAttackable[] getTargets() { return _targets; }
+    public abstract record Attack(IAttackable target) {
+        private IAttackable _target = target;
+        public IAttackable getTarget() { return _target; }
         public abstract float getAttack();
     }
 
@@ -50,12 +52,7 @@ namespace ArenaGame {
 
     }
 
-    public abstract class Targeter {
-        public abstract IAttackable target(IAttackable[] possibleTargets, BattleEnvironment surroundings);
-    }
-
-    public abstract class Attacker(Targeter targeter) : IAttacker {
-        protected Targeter _targeter = targeter;
+    public abstract class Attacker : IAttacker {
         public abstract Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings);
         public abstract string getStatsSummary();
     }
