@@ -24,19 +24,34 @@ namespace ArenaGame
     {
         protected override void controlPhase(List<Side> sides)
         {
-            throw new NotImplementedException();
+            
         }
 
         protected override void attackPhase(List<Side> sides)
         {
             foreach (Side side in sides) {
+                foreach (Side otherSide in sides) {
+                    if (otherSide != side) {
 
+                        foreach(IAttacker actor in side.getEntities()) {
+                            BattleEnvironment surroundings = new BattleEnvironment(side.getEntities().ToList());
+                            Battle battle = new Battle([actor], otherSide.getEntities().Where(x => x is IAttackable).Select(x => (IAttackable)x).ToArray(), surroundings);
+                            battle.resolveBattle();
+                        }
+
+                    }
+                }
             }
         }
 
         protected override bool turnPhase(List<Side> sides)
         {
-            throw new NotImplementedException();
+            foreach(Side side in sides) {
+                foreach(IBattleEntity entity in side.getEntities()) {
+                    entity.turn();
+                }
+            }
+            return !(sides.FindAll(x => !x.hasLost()).Count > 1);
         }
 
     }

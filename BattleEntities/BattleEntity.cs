@@ -1,8 +1,10 @@
+using System.Diagnostics;
+
 namespace ArenaGame {
 
-    public abstract record Attack(IAttackable[] targets) {
-        private IAttackable[] _targets = targets;
-        public IAttackable[] getTargets() { return _targets; }
+    public abstract record Attack(IAttackable target) {
+        private IAttackable _target = target;
+        public IAttackable getTarget() { return _target; }
         public abstract float getAttack();
     }
 
@@ -26,9 +28,9 @@ namespace ArenaGame {
     }
 
     public abstract class BattleEntity(string name, string description, LifeStatus life, Attacker attacker, Defender defender, Turner turner) : Entity(name, description, life), IBattleEntity {
-        private readonly Attacker _attacker = attacker;
-        private readonly Defender _defender = defender;
-        private readonly Turner _turner = turner;
+        protected readonly Attacker _attacker = attacker;
+        protected readonly Defender _defender = defender;
+        protected readonly Turner _turner = turner;
 
         public Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings) {
             return _attacker.createAttacks(targets, surroundings);
@@ -50,12 +52,7 @@ namespace ArenaGame {
 
     }
 
-    public abstract class Targeter {
-        public abstract IAttackable target(IAttackable[] possibleTargets, BattleEnvironment surroundings);
-    }
-
-    public abstract class Attacker(Targeter targeter) : IAttacker {
-        protected Targeter _targeter = targeter;
+    public abstract class Attacker : IAttacker {
         public abstract Attack[] createAttacks(IAttackable[] targets, BattleEnvironment surroundings);
         public abstract string getStatsSummary();
     }
